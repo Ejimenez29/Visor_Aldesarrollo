@@ -2,9 +2,9 @@
 
 #Librerias
 import streamlit as st
-from folium import plugins # Puntos en el mapa
 from streamlit_folium import st_folium
 import folium
+from folium import plugins # Puntos en el mapa
 from folium.plugins import MarkerCluster #Agrupa los Puntos espaciales
 import pandas as pd
 pd.options.plotting.backend = "plotly"
