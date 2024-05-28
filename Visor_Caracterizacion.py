@@ -2,7 +2,6 @@
 
 #Librerias
 import streamlit as st
-import folium
 from folium import plugins # Puntos en el mapa
 from streamlit_folium import st_folium
 from folium.plugins import MarkerCluster #Agrupa los Puntos espaciales
