@@ -1,7 +1,6 @@
 # Proyecto Navegador de Mapas Python
 
 #Librerias
-pip install folium
 import streamlit as st
 import folium
 from folium import plugins # Puntos en el mapa
