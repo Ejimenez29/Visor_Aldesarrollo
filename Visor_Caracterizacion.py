@@ -37,7 +37,7 @@ tile_provider["url"] = tile_provider["url"] + "?api_key={api_key}"
 tile_provider["url"] = tile_provider["url"] + "?api_key={api_key}"
 
 #Puntos Espaciales
-Fichas = pd.read_excel('C:/Caracterizacion/Hogares.xlsx',sheet_name='Fichas')
+Fichas = pd.read_excel('Hogares.xlsx',sheet_name='Fichas')
 Fichas.fillna(0)
 
 #Deploy Map----------------------------------------------------------------
