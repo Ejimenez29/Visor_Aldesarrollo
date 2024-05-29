@@ -2,7 +2,6 @@
 
 #Librerias
 import streamlit as st
-import streamlit-folium
 from streamlit_folium import st_folium
 import folium
 from folium import plugins # Puntos en el mapa
