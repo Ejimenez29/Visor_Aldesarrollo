@@ -15,7 +15,7 @@ from folium.plugins import Search
 import plotly.graph_objs as go
 
 APP_TITLE = 'VISOR DE DATOS'
-APP_SUB_TITLE = 'PROYECTO DE CARACTERIZACION FUNDACION ALDESARROLLO'
+APP_SUB_TITLE = 'CARACTERIZACION DE POBLACION VULNERABLE 2024 MUNICIPIO EL PASO - CESAR'
 
 #import dash_table_experiments as dt
 
