@@ -2,9 +2,9 @@
 
 #Librerias
 import streamlit as st
-from streamlit_folium import st_folium
 import folium
 from folium import plugins # Puntos en el mapa
+from streamlit_folium import st_folium
 from folium.plugins import MarkerCluster #Agrupa los Puntos espaciales
 import pandas as pd
 pd.options.plotting.backend = "plotly"
@@ -37,8 +37,8 @@ tile_provider["url"] = tile_provider["url"] + "?api_key={api_key}"
 tile_provider["url"] = tile_provider["url"] + "?api_key={api_key}"
 
 #Puntos Espaciales
-Fichas = pd.read_excel("Hogares.xlsx",sheet_name="Fichas")
-Fichas.fillna(0)
+
+Fichas = pd.read_excel('Hogares.xlsx',sheet_name='Fichas')
 
 #Deploy Map----------------------------------------------------------------
 mapa = folium.Map(location=[9.661436,-73.746817],
@@ -55,13 +55,10 @@ folium.TileLayer(
 
 #Capa del Cluster-------------------------------------------------------
 
-codigo = list(Fichas['ID Diligenciamiento'])
-id_a = list(Fichas['Número de documento de identidad']) #Identificacion del Titular
-id_b = list(Fichas['Identificacion B']) #Identificacion del Miembro del Hogar
-nombres_a=list(Fichas['Nombre Completos A'])
-apellidos_a=list(Fichas['Apellidos Completos A'])
-nombres_b=list(Fichas['Nombre Completos B']) #Nombres Completos Miembro del Hogar
-apellidos_b=list(Fichas['Apellidos Completos B']) #Apellidos Completos Miembro del Hogar
+codigo = list(Fichas['Ficha No.'])
+id= list(Fichas['Identificacion'])
+nombres=list(Fichas['Nombres Completos'])
+apellidos=list(Fichas['Apellidos Completos'])
 latitud = list(Fichas['Gps latitud'])
 longitud = list(Fichas['Gps longitud'])
 color_e= list(Fichas['Color_Externo'])
@@ -71,63 +68,34 @@ limitante=list(Fichas['Limitante'])
 iconos = list(Fichas['Icono'])
 prefx = list(Fichas['Prefix'])
 clase_e = list(Fichas['Clase_Encuestado']) #Tipo de Encuestado
-i = int(0)
 
 #Crear Cluster para Busqueda
 
-Mc_Fichas = MarkerCluster()
-
-for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, limit, ico, pref, clas_e in zip(codigo, id_a, nombres_a, apellidos_a, id_b, nombres_b, apellidos_b, latitud, longitud, color_e, grupo_vulnerable, grupo_vulnerable_2, limitante, iconos, prefx, clase_e):
-   Condicion=[1]
-   if [clas_e] == Condicion:
-      Mc_Fichas.add_child(folium.Marker(location=[lat,lon], name=[doc_a], tags = [g_v, g_v2, limit],
-        icon=folium.Icon(color=c_e,
-                           #icon_color=c_i,
-                           icon=ico,
-                           prefix=pref)))
-      
 Mc_Fichas_Todos = MarkerCluster()
 
-for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, limit, ico, pref, clas_e in zip(codigo, id_a, nombres_a, apellidos_a, id_b, nombres_b, apellidos_b, latitud, longitud, color_e, grupo_vulnerable, grupo_vulnerable_2, limitante, iconos, prefx, clase_e):
-   Mc_Fichas_Todos.add_child(folium.Marker(location=[lat,lon], name=[doc_b], tags = [g_v, g_v2, limit],
-                           icon=folium.Icon(color=c_e,
-                           #icon_color=c_i,
-                           icon=ico,
-                           prefix=pref)))
+for doc, lat, lon, c_e, g_v, g_v2, limit, ico, pref, clas_e in zip(id, latitud, longitud, color_e, grupo_vulnerable, grupo_vulnerable_2, limitante, iconos, prefx, clase_e):
+   Mc_Fichas_Todos.add_child(folium.Marker(location=[lat,lon], name=[doc], tags = [g_v, g_v2, limit]))
 
 # Agregar los Clusters a la Capa
     
-Capa_Fichas = folium.FeatureGroup(name='Fichas_Vulnerabilidad',show=True)
-Mc_Fichas.add_to(Capa_Fichas)
-mapa.add_child(Capa_Fichas)
-
 Capa_Fichas_Todos = folium.FeatureGroup(name='Fichas_Poblacional',show=False)
 Mc_Fichas_Todos.add_to(Capa_Fichas_Todos)
 mapa.add_child(Capa_Fichas_Todos)
 
 # Agregar Buscador en el mapa
 
-BuscaCodigo = Search(
-    layer=Capa_Fichas,
-    geom_type='Point',
-    placeholder="Buscar Titular Ficha",
-    search_zoom=40,
-    collapsed = False,
-    search_label = "name"
-).add_to(mapa)
-
 BuscaCodigo_Miembro = Search(
     layer=Capa_Fichas_Todos,
     geom_type='Point',
-    placeholder="Buscar Miembro Hogar",
-    search_zoom=40,
+    placeholder="Buscar Por ID",
+    search_zoom=60,
     collapsed = False,
     search_label = "name"
 ).add_to(mapa)
 
 # Agregar Marcardores
 
-for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, limit, ico, pref, clas_e in zip(codigo, id_a, nombres_a, apellidos_a, id_b, nombres_b, apellidos_b, latitud, longitud, color_e, grupo_vulnerable, grupo_vulnerable_2, limitante, iconos, prefx, clase_e):
+for cod, doc, lat, lon, c_e, g_v, g_v2, limit, clas_e in zip(codigo, id, latitud, longitud, color_e, grupo_vulnerable, grupo_vulnerable_2, limitante, clase_e):
    vector=[]
    vector=limit.split(" - ")
    Len_Vector = len(vector)
@@ -135,12 +103,12 @@ for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, lim
    if [clas_e] == Condicion:
          match (Len_Vector):
             case 1:
-               columnas = ['ID Diligenciamiento','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
+               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
                html = Fichas[[*columnas]]
-               html = html.loc[(html['ID Diligenciamiento']) == (cod)]
+               html = html.loc[(html['Ficha No.']) == (cod)]
                html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
                popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc_a], tags = [g_v, g_v2,limit],
+               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,limit],
                   popup=popup,
                   radius=3,
                   fill=True,
@@ -150,12 +118,12 @@ for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, lim
             case 2:
                v0=vector[0]
                v1=vector[1]
-               columnas = ['ID Diligenciamiento','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
+               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
                html = Fichas[[*columnas]]
-               html = html.loc[(html['ID Diligenciamiento']) == (cod)]
+               html = html.loc[(html['Ficha No.']) == (cod)]
                html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
                popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc_a], tags = [g_v, g_v2,v0,v1],
+               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1],
                   popup=popup,
                   radius=3,
                   fill=True,
@@ -166,12 +134,12 @@ for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, lim
                v0=vector[0]
                v1=vector[1]
                v2=vector[2]
-               columnas = ['ID Diligenciamiento','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
+               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
                html = Fichas[[*columnas]]
-               html = html.loc[(html['ID Diligenciamiento']) == (cod)]
+               html = html.loc[(html['Ficha No.']) == (cod)]
                html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
                popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc_a], tags = [g_v, g_v2,v0,v1,v2],
+               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2],
                   popup=popup,
                   radius=3,
                   fill=True,
@@ -183,12 +151,12 @@ for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, lim
                v1=vector[1]
                v2=vector[2]
                v3=vector[3]
-               columnas = ['ID Diligenciamiento','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
+               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
                html = Fichas[[*columnas]]
-               html = html.loc[(html['ID Diligenciamiento']) == (cod)]
+               html = html.loc[(html['Ficha No.']) == (cod)]
                html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
                popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc_a], tags = [g_v, g_v2,v0,v1,v2,v3],
+               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2,v3],
                   popup=popup,
                   radius=3,
                   fill=True,
@@ -201,12 +169,12 @@ for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, lim
                v2=vector[2]
                v3=vector[3]
                v4=vector[4]
-               columnas = ['ID Diligenciamiento','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
+               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
                html = Fichas[[*columnas]]
-               html = html.loc[(html['ID Diligenciamiento']) == (cod)]
+               html = html.loc[(html['Ficha No.']) == (cod)]
                html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
                popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc_a], tags = [g_v, g_v2,v0,v1,v2,v3,v4],
+               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2,v3,v4],
                   popup=popup,
                   radius=3,
                   fill=True,
@@ -220,12 +188,12 @@ for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, lim
                v3=vector[3]
                v4=vector[4]
                v5=vector[5]
-               columnas = ['ID Diligenciamiento','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
+               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
                html = Fichas[[*columnas]]
-               html = html.loc[(html['ID Diligenciamiento']) == (cod)]
+               html = html.loc[(html['Ficha No.']) == (cod)]
                html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
                popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc_a], tags = [g_v, g_v2,v0,v1,v2,v3,v4,v5],
+               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2,v3,v4,v5],
                   popup=popup,
                   radius=3,
                   fill=True,
@@ -240,12 +208,12 @@ for cod, doc_a, nom_a, ape_a, doc_b, nom_b, ape_b, lat, lon, c_e, g_v, g_v2, lim
                v4=vector[4]
                v5=vector[5]
                v6=vector[6]
-               columnas = ['ID Diligenciamiento','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
+               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
                html = Fichas[[*columnas]]
-               html = html.loc[(html['ID Diligenciamiento']) == (cod)]
+               html = html.loc[(html['Ficha No.']) == (cod)]
                html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
                popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc_a], tags = [g_v, g_v2,v0,v1,v2,v3,v4,v5,v6],
+               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2,v3,v4,v5,v6],
                   popup=popup,
                   radius=3,
                   fill=True,
