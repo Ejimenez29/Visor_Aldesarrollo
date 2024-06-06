@@ -1,252 +1,138 @@
-# Proyecto Navegador de Mapas Python
-
-#Librerias
+import folium.plugins
 import streamlit as st
-import folium
-from folium import plugins # Puntos en el mapa
-from streamlit_folium import st_folium
-from folium.plugins import MarkerCluster #Agrupa los Puntos espaciales
 import pandas as pd
-pd.options.plotting.backend = "plotly"
-import numpy as np
-from folium.plugins import TagFilterButton
-import xyzservices.providers as xyz
+import plotly.express as px
+import folium #Librería de mapas en Python
+from streamlit_folium import st_folium #Widget de Streamlit para mostrar los mapas
 from folium.plugins import Search
-import plotly.graph_objs as go
+from folium.plugins import TagFilterButton
+from folium.plugins import MarkerCluster #Plugin para agrupar marcadores
+from folium.plugins import FastMarkerCluster
+from streamlit_folium import folium_static
 
-APP_TITLE = 'VISOR DE DATOS'
-APP_SUB_TITLE = 'CARACTERIZACION DE POBLACION VULNERABLE 2024 MUNICIPIO EL PASO - CESAR'
-
-#import dash_table_experiments as dt
-
-def main():
-    st.set_page_config(APP_TITLE)
-    st.title(APP_TITLE)
-    st.caption(APP_SUB_TITLE)
-
-if __name__ == "__main__":
-   main()
-
-#Add the Stadia Maps Stamen Toner provider details via xyzservices
-tile_provider = xyz.Stadia.StamenTerrain
-
-#Update the URL to include the API key placeholder
-tile_provider["url"] = tile_provider["url"] + "?api_key={api_key}"
-
-#Update the URL to include the API key placeholder
-tile_provider["url"] = tile_provider["url"] + "?api_key={api_key}"
-
-#Puntos Espaciales
+st.set_page_config(
+    page_title="VISOR DE DATOS - CARACTERIZACION DE POBLACION VULNERABLE 2024 MUNICIPIO EL PASO - CESAR",
+    page_icon="🌐",  
+    layout='wide',
+    initial_sidebar_state="expanded"
+)
+st.header('VISOR DE DATOS - CARACTERIZACION DE POBLACION VULNERABLE 2024 MUNICIPIO EL PASO - CESAR')
 
 Fichas = pd.read_excel('Hogares.xlsx',sheet_name='Fichas')
+columnas = ['Ficha No.', 'Dirección', 'Nombres Completos', 'Apellidos Completos','Identificacion','Gps latitud', 'Gps longitud', 'Color_Externo', 'Grupo_Vulnerable', 'Limitante', 'Clase_Encuestado','Total de personas del hogar']
+Fichas_P= Fichas[[*columnas]]
+Fichas_P = Fichas_P.loc[(Fichas_P['Clase_Encuestado']) == ('A')]
 
-#Deploy Map----------------------------------------------------------------
-mapa = folium.Map(location=[9.661436,-73.746817],
-                   zoom_start=12)
+tab1,tab2,tab3=st.tabs(['Mapa Detallado','Mapa General' ,'Graficas'])
 
-#Create the folium TileLayer, specifying the API key
-folium.TileLayer(
-    tiles=tile_provider.build_url(api_key='888731e2-27a6-4c90-93ee-c978439590a9'),
-    attr=tile_provider.attribution,
-    name=tile_provider.name,
-    max_zoom=tile_provider.max_zoom,
-    detect_retina=True
-).add_to(mapa)
-
-#Capa del Cluster-------------------------------------------------------
-
-codigo = list(Fichas['Ficha No.'])
-id= list(Fichas['Identificacion'])
-nombres=list(Fichas['Nombres Completos'])
-apellidos=list(Fichas['Apellidos Completos'])
-latitud = list(Fichas['Gps latitud'])
-longitud = list(Fichas['Gps longitud'])
-color_e= list(Fichas['Color_Externo'])
-grupo_vulnerable = list(Fichas['Grupo_Vulnerable'])
-grupo_vulnerable_2 = list(Fichas['Grupo_Vulnerable_2'])
-limitante=list(Fichas['Limitante'])
-iconos = list(Fichas['Icono'])
-prefx = list(Fichas['Prefix'])
-clase_e = list(Fichas['Clase_Encuestado']) #Tipo de Encuestado
-
-#Crear Cluster para Busqueda
-
-Mc_Fichas_Todos = MarkerCluster()
-
-for doc, lat, lon, c_e, g_v, g_v2, limit, ico, pref, clas_e in zip(id, latitud, longitud, color_e, grupo_vulnerable, grupo_vulnerable_2, limitante, iconos, prefx, clase_e):
-   Mc_Fichas_Todos.add_child(folium.Marker(location=[lat,lon], name=[doc], tags = [g_v, g_v2, limit]))
-
-# Agregar los Clusters a la Capa
-    
-Capa_Fichas_Todos = folium.FeatureGroup(name='Fichas_Poblacional',show=False)
-Mc_Fichas_Todos.add_to(Capa_Fichas_Todos)
-mapa.add_child(Capa_Fichas_Todos)
-
-# Agregar Buscador en el mapa
-
-BuscaCodigo_Miembro = Search(
-    layer=Capa_Fichas_Todos,
-    geom_type='Point',
-    placeholder="Buscar Por ID",
-    search_zoom=60,
-    collapsed = False,
-    search_label = "name"
-).add_to(mapa)
-
-# Agregar Marcardores
-
-for cod, doc, lat, lon, c_e, g_v, g_v2, limit, clas_e in zip(codigo, id, latitud, longitud, color_e, grupo_vulnerable, grupo_vulnerable_2, limitante, clase_e):
-   vector=[]
-   vector=limit.split(" - ")
-   Len_Vector = len(vector)
-   Condicion=[1]
-   if [clas_e] == Condicion:
-         match (Len_Vector):
+with tab1:
+    parMapa = st.selectbox('Tipo Mapa',options=["open-street-map", "carto-positron","carto-darkmatter"])        
+    parTamano = st.checkbox('Tamaño por cantidad de miembros en el hogar')
+    if parTamano:
+        fig = px.scatter_mapbox(Fichas_P,lat='Gps latitud',lon='Gps longitud', 
+                                color='Grupo_Vulnerable', hover_name='Ficha No.',hover_data=['Identificacion','Nombres Completos', 'Apellidos Completos','Grupo_Vulnerable', 'Dirección'],
+                                zoom=10, size='Total de personas del hogar',height=600)
+    else:
+        fig = px.scatter_mapbox(Fichas_P,lat='Gps latitud',lon='Gps longitud', 
+                                color='Grupo_Vulnerable', hover_name='Ficha No.',hover_data=['Identificacion','Nombres Completos', 'Apellidos Completos','Grupo_Vulnerable', 'Dirección'],
+                                zoom=10,height=600)
+        
+    fig.update_layout(mapbox_style=parMapa)
+    st.plotly_chart(fig,use_container_width=True)
+with tab2:
+    mapa = folium.Map(location=[9.661436,-73.746817], zoom_start=15)
+    id= list(Fichas['Identificacion'])
+    latitud = list(Fichas['Gps latitud'])
+    longitud = list(Fichas['Gps longitud'])
+    i= 0
+    FastMarkerCluster(data=zip(latitud, longitud,id),name='Poblacion Total').add_to(mapa)
+    marker_cluster = MarkerCluster()
+    #marker_Cluster_Todos = MarkerCluster()
+    #Mc_Fichas_Todos = MarkerCluster()
+    columnas = ['Ficha No.','Identificacion','Gps latitud', 'Gps longitud', 'Color_Externo', 'Grupo_Vulnerable', 'Limitante', 'Clase_Encuestado']
+    Fichas_P= Fichas[[*columnas]]
+    Fichas_P = Fichas_P.loc[(Fichas_P['Clase_Encuestado']) == ('A')]
+    for index, row in Fichas_P.iterrows():
+        #Identificacion= id[i]
+        #Gps_Lat=latitud[i]
+        #Gps_Lon=longitud[i]
+        vector=[]
+        vector=row['Limitante'].split(" - ")
+        Len_Vector = len(vector)
+        columnas = ['Ficha No.', 'Dirección','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable', 'Limitante']
+        html = Fichas[[*columnas]]
+        html = html.loc[(html['Ficha No.']) == row['Ficha No.']]
+        html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
+        popup = folium.Popup(html)
+        #marker_Cluster_Todos.add_child(folium.Marker(location=[Gps_Lat,Gps_Lon], name=Identificacion, popup=popup,))
+        match (Len_Vector):
             case 1:
-               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
-               html = Fichas[[*columnas]]
-               html = html.loc[(html['Ficha No.']) == (cod)]
-               html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
-               popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,limit],
-                  popup=popup,
-                  radius=3,
-                  fill=True,
-                  color=[c_e],
-                  fill_color=[c_e], 
-                  fill_opacity=1).add_to(mapa)
+                folium.CircleMarker(location=[row['Gps latitud'],row['Gps longitud']], tags = [row['Grupo_Vulnerable'], row['Limitante']],
+                    popup=popup,
+                    radius=3,
+                    fill=True,
+                    color=row['Color_Externo'],
+                    fill_color=row['Color_Externo'], 
+                    fill_opacity=1).add_to(mapa)
             case 2:
-               v0=vector[0]
-               v1=vector[1]
-               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
-               html = Fichas[[*columnas]]
-               html = html.loc[(html['Ficha No.']) == (cod)]
-               html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
-               popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1],
-                  popup=popup,
-                  radius=3,
-                  fill=True,
-                  color=[c_e],
-                  fill_color=[c_e], 
-                  fill_opacity=1).add_to(mapa)           
-            case 3:
-               v0=vector[0]
-               v1=vector[1]
-               v2=vector[2]
-               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
-               html = Fichas[[*columnas]]
-               html = html.loc[(html['Ficha No.']) == (cod)]
-               html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
-               popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2],
-                  popup=popup,
-                  radius=3,
-                  fill=True,
-                  color=[c_e],
-                  fill_color=[c_e], 
-                  fill_opacity=1).add_to(mapa)
-            case 4:
-               v0=vector[0]
-               v1=vector[1]
-               v2=vector[2]
-               v3=vector[3]
-               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
-               html = Fichas[[*columnas]]
-               html = html.loc[(html['Ficha No.']) == (cod)]
-               html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
-               popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2,v3],
-                  popup=popup,
-                  radius=3,
-                  fill=True,
-                  color=[c_e],
-                  fill_color=[c_e], 
-                  fill_opacity=1).add_to(mapa)            
-            case 5:
-               v0=vector[0]
-               v1=vector[1]
-               v2=vector[2]
-               v3=vector[3]
-               v4=vector[4]
-               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
-               html = Fichas[[*columnas]]
-               html = html.loc[(html['Ficha No.']) == (cod)]
-               html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
-               popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2,v3,v4],
-                  popup=popup,
-                  radius=3,
-                  fill=True,
-                  color=[c_e],
-                  fill_color=[c_e], 
-                  fill_opacity=1).add_to(mapa)            
-            case 6:
-               v0=vector[0]
-               v1=vector[1]
-               v2=vector[2]
-               v3=vector[3]
-               v4=vector[4]
-               v5=vector[5]
-               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
-               html = Fichas[[*columnas]]
-               html = html.loc[(html['Ficha No.']) == (cod)]
-               html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
-               popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2,v3,v4,v5],
-                  popup=popup,
-                  radius=3,
-                  fill=True,
-                  color=[c_e],
-                  fill_color=[c_e], 
-                  fill_opacity=1).add_to(mapa)
-            case 7:
-               v0=vector[0]
-               v1=vector[1]
-               v2=vector[2]
-               v3=vector[3]
-               v4=vector[4]
-               v5=vector[5]
-               v6=vector[6]
-               columnas = ['Ficha No.','Tipo_ID','Identificacion','Nombres Completos', 'Apellidos Completos', 'Edad_C', 'Sexos_C', 'Grupo_Vulnerable']
-               html = Fichas[[*columnas]]
-               html = html.loc[(html['Ficha No.']) == (cod)]
-               html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
-               popup = folium.Popup(html)
-               folium.CircleMarker(location=[lat,lon], name=[doc], tags = [g_v, g_v2,v0,v1,v2,v3,v4,v5,v6],
-                  popup=popup,
-                  radius=3,
-                  fill=True,
-                  color=[c_e],
-                  fill_color=[c_e], 
-                  fill_opacity=1).add_to(mapa)
+                v0=vector[0]
+                v1=vector[1]
+                folium.CircleMarker(location=[row['Gps latitud'],row['Gps longitud']], tags = [row['Grupo_Vulnerable'], v0, v1],
+                    popup=popup,
+                    radius=3,
+                    fill=True,
+                    color=row['Color_Externo'],
+                    fill_color=row['Color_Externo'], 
+                    fill_opacity=1).add_to(mapa)
+    folium.plugins.Fullscreen(
+        position="topright",
+        title="Pantalla completa",
+        title_cancel="Cancelar",
+        force_separate_button=True,
+    ).add_to(mapa)
+   #folium_static(mapa, height=600, width=2000)
+    st_folium(mapa, height=500,width=500, returned_objects=[])
 
-#Capas del Mapa-----------------------------------------------------
 
-folium.TileLayer('CartoDB Positron').add_to(mapa)
-folium.LayerControl(position='topleft').add_to(mapa)
+with tab3:
+    st.dataframe(Fichas,use_container_width=True)
+    folium_static(mapa, height=600, width=2000)
+    Condicion_Valores= Fichas.groupby('Grupo_Vulnerable')['Grupo_Vulnerable'].agg(len)
+    
 
-#Grupos de Caracterizacion
+   # fig1 =Condicion_Valores.plot.barh(title='Grupos Vulnerables', template='simple_white',color={'Rrom y Población LGTBI':'olive','Desplazado por la Violencia':'red','Afrocolombiano':'green','Desplazado por desastres naturales':'blue', 'Indígenas': 'lightgray','Madre cabeza de familia': 'pink', 'Adulto Mayor':'orange','Expresidiario':'ligthgreen', 'Reinsertado':'darkgreen'})
 
-Grupo_Poblacional = ['Afrocolombiano','Adulto Mayor','Madre cabeza de familia','Desplazado por la Violencia','Indígenas','Rrom y Población LGTBI','Ninguno', 'Desplazado por desastres naturales', 'Expresidiario', 'Reinsertado']
-TagFilterButton(Grupo_Poblacional).add_to(mapa)
+    #Sexo_Valores=Fichas.groupby('Sexos_C')['Sexos_C'].agg(len)
+    #fig2=Sexo_Valores.plot.bar(title='Distribucion Poblacional Por Sexo', template='simple_white',color={'Mujer':'red','Hombre':'green','ND':'lightgray'})
 
-#Grupos de Vulnerabilidades
+    #st.plotly_chart(fig1,use_container_width=True)
+    #st.plotly_chart(fig2,use_container_width=True)
 
-Limitante = ['Bañarse, vestirse o alimentarse por sí mismo','Dificultad para salir a la calle sin ayuda o compañía','Entender o aprender','Hablar','Moverse o caminar por sí mismo','Oír','Ver','Ninguna de las anteriores']
-TagFilterButton(Limitante).add_to(mapa)
+    """   Capa_Todos = folium.FeatureGroup(name='Poblacion Total',show=False)
+   Capa_Todos.add_child(Mc_Fichas_Todos)
+   mapa.add_child(Capa_Todos)
 
-#Desplegar Mapa
+    BuscaCodigo_Miembro = Search(
+        layer=Capa_Todos,
+        geom_type='Point',
+        placeholder="Buscar Por ID",
+        search_zoom=60,
+        collapsed = True,
+        search_label = "name",
+    ).add_to(mapa)
 
-st_map = st_folium(mapa, width=2000, height=450)
+    Grupo_Poblacional = ['Afrocolombiano','Adulto Mayor','Madre cabeza de familia','Desplazado por la Violencia','Indígenas','Rrom y Población LGTBI','Desplazado por desastres naturales', 'Expresidiario', 'Reinsertado']
+    TagFilterButton(Grupo_Poblacional).add_to(mapa)
 
-#Desplegar Graficas
+    Limitante = ['Discapacidad Orgánica','Discapacidad Mental','Discapacidad Motora','Discapacidad Sensorial','Discapacidad Nula','Pluridiscapacidad']
+    TagFilterButton(Limitante).add_to(mapa)
 
-Condicion_Valores= Fichas.groupby('Grupo_Vulnerable')['Grupo_Vulnerable'].agg(len)
-fig =Condicion_Valores.plot.barh(title='Grupos Vulnerables', template='simple_white',color={'Rrom y Población LGTBI':'darkcyan','Desplazado por la Violencia':'red','Afrocolombiano':'green','Desplazado por desastres naturales':'blue', 'Indígenas': 'lightgray','Madre cabeza de familia': 'pink', 'Adulto Mayor':'orange','Expresidiario':'ligthgreen', 'Reinsertado':'darkgreen'})
+    folium.plugins.Fullscreen(
+        position="topright",
+        title="Pantalla completa",
+        title_cancel="Cancelar",
+        force_separate_button=True,
+    ).add_to(mapa)
 
-Sexo_Valores=Fichas.groupby('Sexos_C')['Sexos_C'].agg(len)
-fig2=Sexo_Valores.plot.bar(title='Distribucion Poblacional Por Sexo', template='simple_white',color={'Mujer':'red','Hombre':'green','ND':'lightgray'})
-
-Vulnerable = st.sidebar.plotly_chart(fig)
-Vulnerable = st.sidebar.plotly_chart(fig2)
+    folium.TileLayer('CartoDB Positron').add_to(mapa)
+    folium.LayerControl().add_to(mapa)"""
