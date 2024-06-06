@@ -90,10 +90,8 @@ with tab2:
         title_cancel="Cancelar",
         force_separate_button=True,
     ).add_to(mapa)
-   #folium_static(mapa, height=600, width=2000)
-    st_folium(mapa, height=500,width=500, returned_objects=[])
-
-
+    folium_static(mapa, height=600, width=2000)
+    st_folium(mapa, height=500,width=1000, returned_objects=[])
 with tab3:
     st.dataframe(Fichas,use_container_width=True)
     folium_static(mapa, height=600, width=2000)
