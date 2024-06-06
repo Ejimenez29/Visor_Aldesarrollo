@@ -8,7 +8,9 @@ from folium.plugins import Search
 from folium.plugins import TagFilterButton
 from folium.plugins import MarkerCluster #Plugin para agrupar marcadores
 from folium.plugins import FastMarkerCluster
+from folium.plugins import Fullscreen
 from streamlit_folium import folium_static
+import webbrowser
 
 st.set_page_config(
     page_title="VISOR DE DATOS - CARACTERIZACION DE POBLACION VULNERABLE 2024 MUNICIPIO EL PASO - CESAR",
@@ -16,6 +18,7 @@ st.set_page_config(
     layout='wide',
     initial_sidebar_state="expanded"
 )
+
 st.header('VISOR DE DATOS - CARACTERIZACION DE POBLACION VULNERABLE 2024 MUNICIPIO EL PASO - CESAR')
 
 Fichas = pd.read_excel('Hogares.xlsx',sheet_name='Fichas')
@@ -40,22 +43,21 @@ with tab1:
     fig.update_layout(mapbox_style=parMapa)
     st.plotly_chart(fig,use_container_width=True)
 with tab2:
-    mapa = folium.Map(location=[9.661436,-73.746817], zoom_start=15)
+    st.dataframe(Fichas,use_container_width=True)
+    m = folium.Map(location=[9.661436,-73.746817], zoom_start=15)
+    Marker_Cluster_Fichas = MarkerCluster()
     id= list(Fichas['Identificacion'])
     latitud = list(Fichas['Gps latitud'])
     longitud = list(Fichas['Gps longitud'])
-    i= 0
-    FastMarkerCluster(data=zip(latitud, longitud,id),name='Poblacion Total').add_to(mapa)
-    marker_cluster = MarkerCluster()
-    #marker_Cluster_Todos = MarkerCluster()
-    #Mc_Fichas_Todos = MarkerCluster()
+    FastMarkerCluster(data=zip(latitud, longitud,id),name='Poblacion Total').add_to(m)
     columnas = ['Ficha No.','Identificacion','Gps latitud', 'Gps longitud', 'Color_Externo', 'Grupo_Vulnerable', 'Limitante', 'Clase_Encuestado']
     Fichas_P= Fichas[[*columnas]]
     Fichas_P = Fichas_P.loc[(Fichas_P['Clase_Encuestado']) == ('A')]
+    i=0
     for index, row in Fichas_P.iterrows():
-        #Identificacion= id[i]
-        #Gps_Lat=latitud[i]
-        #Gps_Lon=longitud[i]
+        Identificacion= id[i]
+        Gps_Lat=latitud[i]
+        Gps_Lon=longitud[i]
         vector=[]
         vector=row['Limitante'].split(" - ")
         Len_Vector = len(vector)
@@ -64,52 +66,43 @@ with tab2:
         html = html.loc[(html['Ficha No.']) == row['Ficha No.']]
         html = html.to_html(classes="table") #table-striped table-hover table-condensed table-responsive
         popup = folium.Popup(html)
-        #marker_Cluster_Todos.add_child(folium.Marker(location=[Gps_Lat,Gps_Lon], name=Identificacion, popup=popup,))
         match (Len_Vector):
             case 1:
-                folium.CircleMarker(location=[row['Gps latitud'],row['Gps longitud']], tags = [row['Grupo_Vulnerable'], row['Limitante']],
+                marker=folium.CircleMarker(location=[row['Gps latitud'],row['Gps longitud']], name=row['Identificacion'],tags = [row['Grupo_Vulnerable'], row['Limitante']],
                     popup=popup,
                     radius=3,
                     fill=True,
                     color=row['Color_Externo'],
                     fill_color=row['Color_Externo'], 
-                    fill_opacity=1).add_to(mapa)
+                    fill_opacity=1)
             case 2:
                 v0=vector[0]
                 v1=vector[1]
-                folium.CircleMarker(location=[row['Gps latitud'],row['Gps longitud']], tags = [row['Grupo_Vulnerable'], v0, v1],
+                marker=folium.CircleMarker(location=[row['Gps latitud'],row['Gps longitud']],name=row['Identificacion'],tags = [row['Grupo_Vulnerable'], v0, v1],
                     popup=popup,
                     radius=3,
                     fill=True,
                     color=row['Color_Externo'],
                     fill_color=row['Color_Externo'], 
-                    fill_opacity=1).add_to(mapa)
+                    fill_opacity=1)
+        Marker_Cluster_Fichas.add_child(folium.Marker(location=[row['Gps latitud'],row['Gps longitud']], name=row['Identificacion']))
+        marker.add_to(m)
+        i=i+1
+    Grupo_Poblacional = ['Afrocolombiano','Adulto Mayor','Madre cabeza de familia','Desplazado por la Violencia','Indígenas','Rrom y Población LGTBI','Desplazado por desastres naturales', 'Expresidiario', 'Reinsertado']
+    TagFilterButton(Grupo_Poblacional).add_to(m)
+    Limitante = ['Discapacidad Orgánica','Discapacidad Mental','Discapacidad Motora','Discapacidad Sensorial','Discapacidad Nula','Pluridiscapacidad']
+    TagFilterButton(Limitante).add_to(m)
     folium.plugins.Fullscreen(
         position="topright",
         title="Pantalla completa",
         title_cancel="Cancelar",
         force_separate_button=True,
-    ).add_to(mapa)
-    folium_static(mapa)
-    st_folium(mapa)
-with tab3:
-    st.dataframe(Fichas,use_container_width=True)
-    folium_static(mapa, height=600, width=2000)
-    Condicion_Valores= Fichas.groupby('Grupo_Vulnerable')['Grupo_Vulnerable'].agg(len)
-    
-
-   # fig1 =Condicion_Valores.plot.barh(title='Grupos Vulnerables', template='simple_white',color={'Rrom y Población LGTBI':'olive','Desplazado por la Violencia':'red','Afrocolombiano':'green','Desplazado por desastres naturales':'blue', 'Indígenas': 'lightgray','Madre cabeza de familia': 'pink', 'Adulto Mayor':'orange','Expresidiario':'ligthgreen', 'Reinsertado':'darkgreen'})
-
-    #Sexo_Valores=Fichas.groupby('Sexos_C')['Sexos_C'].agg(len)
-    #fig2=Sexo_Valores.plot.bar(title='Distribucion Poblacional Por Sexo', template='simple_white',color={'Mujer':'red','Hombre':'green','ND':'lightgray'})
-
-    #st.plotly_chart(fig1,use_container_width=True)
-    #st.plotly_chart(fig2,use_container_width=True)
-
-    """   Capa_Todos = folium.FeatureGroup(name='Poblacion Total',show=False)
-   Capa_Todos.add_child(Mc_Fichas_Todos)
-   mapa.add_child(Capa_Todos)
-
+    ).add_to(m)
+    Capa_Todos = folium.FeatureGroup(name='Total Fichas',show=False)
+    Capa_Todos.add_child(Marker_Cluster_Fichas)
+    m.add_child(Capa_Todos)
+    folium.TileLayer('CartoDB Positron').add_to(m)
+    folium.LayerControl().add_to(m)
     BuscaCodigo_Miembro = Search(
         layer=Capa_Todos,
         geom_type='Point',
@@ -117,20 +110,10 @@ with tab3:
         search_zoom=60,
         collapsed = True,
         search_label = "name",
-    ).add_to(mapa)
-
-    Grupo_Poblacional = ['Afrocolombiano','Adulto Mayor','Madre cabeza de familia','Desplazado por la Violencia','Indígenas','Rrom y Población LGTBI','Desplazado por desastres naturales', 'Expresidiario', 'Reinsertado']
-    TagFilterButton(Grupo_Poblacional).add_to(mapa)
-
-    Limitante = ['Discapacidad Orgánica','Discapacidad Mental','Discapacidad Motora','Discapacidad Sensorial','Discapacidad Nula','Pluridiscapacidad']
-    TagFilterButton(Limitante).add_to(mapa)
-
-    folium.plugins.Fullscreen(
-        position="topright",
-        title="Pantalla completa",
-        title_cancel="Cancelar",
-        force_separate_button=True,
-    ).add_to(mapa)
-
-    folium.TileLayer('CartoDB Positron').add_to(mapa)
-    folium.LayerControl().add_to(mapa)"""
+    ).add_to(m)
+    
+    Salida=folium_static(m, height=600,width=1800)
+    m.save('Mimapa.html')
+    webbrowser.open('Mimapa.html')
+with tab3:
+    st.dataframe(Fichas,use_container_width=True)
