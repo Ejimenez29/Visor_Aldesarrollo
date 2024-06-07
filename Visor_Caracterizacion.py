@@ -44,7 +44,7 @@ with tab1:
     fig.update_layout(mapbox_style=parMapa)
     st.plotly_chart(fig,use_container_width=True)
 with tab2:
-    """st.dataframe(Fichas,use_container_width=True)
+    st.dataframe(Fichas,use_container_width=True)
     m = folium.Map(location=[9.661436,-73.746817], zoom_start=15)
     Marker_Cluster_Fichas = MarkerCluster()
     id= list(Fichas['Identificacion'])
@@ -115,7 +115,7 @@ with tab2:
     
     Salida=folium_static(m, height=600,width=1800)
     m.save('Mimapa.html')
-    webbrowser.open('Mimapa.html')"""""
+    webbrowser.open('Mimapa.html')
 with tab3:
     # Definición de paletas de colores
     paleta_discreta= px.colors.carto.Safe
