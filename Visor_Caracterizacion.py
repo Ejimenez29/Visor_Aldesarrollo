@@ -113,7 +113,7 @@ with tab2:
         search_label = "name",
     ).add_to(m)
     
-    Salida=folium_static(m, height=600,width=1800)
+    Salida=st_folium(m, height=600,use_container_width=True, returned_objects=[])
     m.save('Mimapa.html')
     webbrowser.open('Mimapa.html')
 with tab3:
